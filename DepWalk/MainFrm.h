@@ -38,7 +38,7 @@ public:
 	END_MSG_MAP()
 
 private:
-	void InitMenu();
+	void InitMenu(HMENU hMenu);
 
 	// Handler prototypes (uncomment arguments if needed):
 	//	LRESULT MessageHandler(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/)

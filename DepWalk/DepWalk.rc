@@ -46,34 +46,6 @@ END
 
 /////////////////////////////////////////////////////////////////////////////
 //
-// Toolbar
-//
-
-IDR_MAINFRAME TOOLBAR 16, 15
-BEGIN
-    BUTTON      ID_FILE_NEW
-    BUTTON      ID_FILE_OPEN
-    BUTTON      ID_FILE_SAVE
-    SEPARATOR
-    BUTTON      ID_EDIT_CUT
-    BUTTON      ID_EDIT_COPY
-    BUTTON      ID_EDIT_PASTE
-    SEPARATOR
-    BUTTON      ID_FILE_PRINT
-    BUTTON      ID_APP_ABOUT
-END
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Bitmap
-//
-
-IDR_MAINFRAME           BITMAP                  "res\\Toolbar.bmp"
-
-
-/////////////////////////////////////////////////////////////////////////////
-//
 // Menu
 //
 
@@ -89,11 +61,7 @@ BEGIN
     END
     POPUP "&Edit"
     BEGIN
-        MENUITEM "&Undo\tCtrl+Z",               ID_EDIT_UNDO
-        MENUITEM SEPARATOR
-        MENUITEM "Cu&t\tCtrl+X",                ID_EDIT_CUT
         MENUITEM "&Copy\tCtrl+C",               ID_EDIT_COPY
-        MENUITEM "&Paste\tCtrl+V",              ID_EDIT_PASTE
     END
     POPUP "&View"
     BEGIN
@@ -105,6 +73,10 @@ BEGIN
         MENUITEM "&Dark Mode",                  ID_OPTIONS_DARKMODE
         MENUITEM "&Always On Top",              ID_OPTIONS_ALWAYSONTOP
     END
+    POPUP "&Tools"
+    BEGIN
+        MENUITEM "&System Information...",      ID_TOOLS_SYSTEMINFORMATION
+    END
     POPUP "&Window"
     BEGIN
         MENUITEM "&Close\tCtrl+F4",             ID_WINDOW_CLOSE
@@ -112,7 +84,9 @@ BEGIN
     END
     POPUP "&Help"
     BEGIN
-        MENUITEM "&About DepWalk",              ID_APP_ABOUT
+        MENUITEM "&About DepWalk...",           ID_APP_ABOUT
+        MENUITEM SEPARATOR
+        MENUITEM "About &Windows...",           ID_HELP_ABOUTWINDOWS
     END
 END
 
@@ -144,6 +118,10 @@ IDI_WIN_CLOSE           ICON                    "res\\window-close.ico"
 
 IDI_WIN_CLOSEALL        ICON                    "res\\windows-close.ico"
 
+IDI_COPY                ICON                    "res\\copy.ico"
+
+IDI_FUNC                ICON                    "res\\function.ico"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -152,12 +130,15 @@ IDI_WIN_CLOSEALL        ICON                    "res\\windows-close.ico"
 
 IDD_ABOUTBOX DIALOGEX 0, 0, 188, 81
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "About"
+CAPTION "About DepWalk"
 FONT 9, "Segoe UI", 0, 0, 0x0
 BEGIN
     DEFPUSHBUTTON   "OK",IDOK,72,60,43,14
-    CTEXT           "DepWalk Application v1.0\n\n(c) Copyright 2023",IDC_STATIC,40,17,101,32
-    ICON            IDR_MAINFRAME,IDC_STATIC,7,7,18,17
+    ICON            IDR_MAINFRAME,IDC_STATIC,7,7,20,20
+    LTEXT           "Static",IDC_VERSION,43,9,116,8
+    LTEXT           "Static",IDC_COPYRIGHT,43,24,116,8
+    CONTROL         "<a>https://github.com/zodiacon/depwalk</a>",IDC_SYSLINK,
+                    "SysLink",WS_TABSTOP,39,41,126,14
 END
 
 
@@ -210,8 +191,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,1,0,0
- PRODUCTVERSION 0,1,0,0
+ FILEVERSION 0,2,0,0
+ PRODUCTVERSION 0,2,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -227,13 +208,13 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "CompanyName", "Pavel Yosifovich"
-            VALUE "FileDescription", "DepWalk Module"
-            VALUE "FileVersion", "0.1.0.0"
+            VALUE "FileDescription", "DepWalk - Dependency Walker Redux"
+            VALUE "FileVersion", "0.2.0.0"
             VALUE "InternalName", "DepWalk"
-            VALUE "LegalCopyright", "Copyright 2023"
+            VALUE "LegalCopyright", "©2023 Pavel Yosifovich"
             VALUE "OriginalFilename", "DepWalk.exe"
             VALUE "ProductName", "DepWalk Module"
-            VALUE "ProductVersion", "0.1.0.0"
+            VALUE "ProductVersion", "0.2.0.0"
         END
     END
     BLOCK "VarFileInfo"

@@ -8,6 +8,12 @@
 
 class PEFile {
 public:
+	PEFile() = default;
+	PEFile(PEFile&&) = default;
+
+	PEFile(PEFile const&) = delete;
+	PEFile& operator=(PEFile const&) = delete;
+
 	bool Open(std::wstring_view path);
 	void Close();
 

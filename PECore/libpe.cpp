@@ -167,6 +167,8 @@ namespace libpe {
 		}
 		
 		const auto ret = LoadPe({ m_ptr.get(), static_cast<std::size_t>(stLI.QuadPart) });
+		m_ptr.reset();
+
 		return ret;
 	}
 

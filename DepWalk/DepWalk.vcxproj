@@ -68,6 +68,7 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <TargetName>$(ProjectName)64</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
@@ -77,6 +78,7 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
+    <TargetName>$(ProjectName)64</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -232,15 +234,16 @@
     <ResourceCompile Include="DepWalk.rc" />
   </ItemGroup>
   <ItemGroup>
+    <Image Include="res\copy.ico" />
     <Image Include="res\DepWalk.ico" />
     <Image Include="res\DLL.ico" />
     <Image Include="res\function-export.ico" />
     <Image Include="res\function-import.ico" />
+    <Image Include="res\function.ico" />
     <Image Include="res\interface.ico" />
     <Image Include="res\open.ico" />
     <Image Include="res\pin_green.ico" />
     <Image Include="res\save.ico" />
-    <Image Include="res\toolbar.bmp" />
     <Image Include="res\window-close.ico" />
     <Image Include="res\windows-close.ico" />
   </ItemGroup>
