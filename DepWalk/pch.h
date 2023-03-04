@@ -19,9 +19,14 @@ extern CAppModule _Module;
 #include <atlctrlw.h>
 #include <atlctrlx.h>
 #include <atlsplit.h>
+#include <atltypes.h>
+#include <atlgdi.h>
+#include <strsafe.h>
+#include <dontuse.h>
 #include <vector>
 #include <string>
 #include <memory>
+#include <unordered_map>
 
 #if defined _M_IX86
   #pragma comment(linker, "/manifestdependency:\"type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='x86' publicKeyToken='6595b64144ccf1df' language='*'\"")

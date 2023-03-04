@@ -126,6 +126,24 @@ END
 // remains consistent on all systems.
 IDR_MAINFRAME           ICON                    "res\\DepWalk.ico"
 
+IDI_DLL                 ICON                    "res\\DLL.ico"
+
+IDI_FUNC_EXPORT         ICON                    "res\\function-export.ico"
+
+IDI_FUNC_IMPORT         ICON                    "res\\function-import.ico"
+
+IDI_INTERFACE           ICON                    "res\\interface.ico"
+
+IDI_OPEN                ICON                    "res\\open.ico"
+
+IDI_PIN                 ICON                    "res\\pin_green.ico"
+
+IDI_SAVE                ICON                    "res\\save.ico"
+
+IDI_WIN_CLOSE           ICON                    "res\\window-close.ico"
+
+IDI_WIN_CLOSEALL        ICON                    "res\\windows-close.ico"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
