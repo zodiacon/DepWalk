@@ -14,11 +14,12 @@ struct ModuleInfo {
 	std::vector<libpe::PEExportFunction> Exports;
 	int Icon;
 	bool IsApiSet;
+	mutable ULONG64 FileTime{ 0 };
 
 	CString const& GetFileTime() const;
 
 private:
-	mutable CString FileTime;
+	mutable CString m_FileTimeAsString;
 };
 
 struct ModuleTreeInfo {

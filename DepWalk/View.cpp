@@ -132,6 +132,21 @@ void CView::OnTreeSelChanged(HWND tree, HTREEITEM hOld, HTREEITEM hNew) {
 }
 
 void CView::DoSort(SortInfo const* si) {
+	auto asc = si->SortAscending;
+	auto tag = GetColumnManager(si->hWnd)->GetColumnTag<ColumnType>(si->SortColumn);
+
+	if (si->hWnd == m_ModuleList) {
+		auto compare = [&](auto& m1, auto& m2) {
+			switch (tag) {
+				case ColumnType::Name: return SortHelper::Sort(m1->Name, m2->Name, asc);
+				case ColumnType::Path: return SortHelper::Sort(m1->FullPath, m2->FullPath, asc);
+				case ColumnType::FileTime: return SortHelper::Sort(m1->FileTime, m2->FileTime, asc);
+				case ColumnType::FileSize: return SortHelper::Sort(m1->PE.GetFileSize(), m2->PE.GetFileSize(), asc);
+			}
+			return false;
+		};
+		std::ranges::sort(m_Modules, compare);
+	}
 }
 
 std::pair<HTREEITEM, ModuleInfo*> CView::ParsePE(PCWSTR name, HTREEITEM hParent, int icon) {
@@ -141,17 +156,14 @@ std::pair<HTREEITEM, ModuleInfo*> CView::ParsePE(PCWSTR name, HTREEITEM hParent,
 	auto m = mi.get();
 	bool newModule = false;
 
-	if (m_ModulesMap.empty()) {
-		m_ModulesMap.insert({ name, m });
-		m_Modules.push_back(std::move(mi));
-	}
-	else if (fullpath) {
+	if (fullpath) {
 		if (auto it = m_ModulesMap.find(name); it != m_ModulesMap.end())
 			m = it->second;
 	}
-
-	if (!fullpath)
+	else {
 		m->Name = name;
+	}
+
 	auto hLib = apiSet || fullpath ? nullptr : ::LoadLibraryEx(name, nullptr, DONT_RESOLVE_DLL_REFERENCES);
 	auto ext = wcsrchr(name, L'.');
 	if (!apiSet && !fullpath && hLib == nullptr && _wcsicmp(ext, L".sys") == 0) {
@@ -171,6 +183,9 @@ std::pair<HTREEITEM, ModuleInfo*> CView::ParsePE(PCWSTR name, HTREEITEM hParent,
 	}
 
 	if (icon < 0) {
+		//
+		// icon setting
+		//
 		icon = apiSet ? 1 : 0;
 		if (icon == 0) {
 			if (_wcsicmp(ext, L".sys") == 0)
@@ -257,7 +272,7 @@ LRESULT CView::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOO
 		LVS_OWNERDATA | LVS_REPORT | LVS_SHAREIMAGELISTS);
 	m_ModuleList.SetExtendedListViewStyle(LVS_EX_DOUBLEBUFFER | LVS_EX_INFOTIP | LVS_EX_FULLROWSELECT);
 
-	m_Tree.Create(m_VSplitter, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT);
+	m_Tree.Create(m_VSplitter, rcDefault, nullptr, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | TVS_HASBUTTONS | TVS_HASLINES | TVS_LINESATROOT | TVS_SHOWSELALWAYS);
 	m_Tree.SetExtendedStyle(TVS_EX_DOUBLEBUFFER, TVS_EX_DOUBLEBUFFER);
 
 	m_MainSplitter.SetSplitterPanes(m_VSplitter, m_ModuleList);
@@ -324,17 +339,17 @@ LRESULT CView::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOO
 }
 
 CString const& ModuleInfo::GetFileTime() const {
-	if (!FullPath.empty() && FileTime.IsEmpty()) {
+	if (!FullPath.empty() && m_FileTimeAsString.IsEmpty()) {
 		auto hFile = ::CreateFile(FullPath.c_str(), FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
 		if (hFile != INVALID_HANDLE_VALUE) {
-			FILETIME time, dummy;
-			::GetFileTime(hFile, &dummy, &dummy, &time);
+			FILETIME dummy;
+			::GetFileTime(hFile, &dummy, &dummy, (FILETIME*)&FileTime);
 			WCHAR ft[96];
 			DWORD flags = FDTF_SHORTDATE | FDTF_SHORTTIME | FDTF_NOAUTOREADINGORDER;
-			if (::SHFormatDateTime(&time, &flags, ft, _countof(ft)))
-				FileTime = ft;
+			if (::SHFormatDateTime((FILETIME*)&FileTime, &flags, ft, _countof(ft)))
+				m_FileTimeAsString = ft;
 			::CloseHandle(hFile);
 		}
 	}
-	return FileTime;
+	return m_FileTimeAsString;
 }
