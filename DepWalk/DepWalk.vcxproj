@@ -237,6 +237,7 @@
     <Image Include="res\copy.ico" />
     <Image Include="res\DepWalk.ico" />
     <Image Include="res\DLL.ico" />
+    <Image Include="res\Error.ico" />
     <Image Include="res\function-export.ico" />
     <Image Include="res\function-import.ico" />
     <Image Include="res\function.ico" />
@@ -244,6 +245,7 @@
     <Image Include="res\open.ico" />
     <Image Include="res\pin_green.ico" />
     <Image Include="res\save.ico" />
+    <Image Include="res\sysfile.ico" />
     <Image Include="res\window-close.ico" />
     <Image Include="res\windows-close.ico" />
   </ItemGroup>

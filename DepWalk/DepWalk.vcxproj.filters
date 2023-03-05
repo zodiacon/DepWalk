@@ -96,5 +96,11 @@
     <Image Include="res\function.ico">
       <Filter>Resource Files\Icons</Filter>
     </Image>
+    <Image Include="res\Error.ico">
+      <Filter>Resource Files\Icons</Filter>
+    </Image>
+    <Image Include="res\sysfile.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

@@ -38,6 +38,7 @@ public:
 	CString GetColumnText(HWND h, int row, int col) const;
 	int GetRowImage(HWND h, int row, int col) const;
 	void OnTreeSelChanged(HWND tree, HTREEITEM hOld, HTREEITEM hNew);
+	void DoSort(SortInfo const* si);
 
 	BOOL PreTranslateMessage(MSG* pMsg);
 	static CString UndecorateName(PCSTR name);
@@ -75,11 +76,11 @@ private:
 
 	struct Compare {
 		bool operator()(std::wstring const& s1, std::wstring const& s2) const {
-			return _wcsicmp(s1.c_str(), s2.c_str()) == 0;
+			return _wcsicmp(s1.c_str(), s2.c_str()) < 0;
 		}
 	};
 
-	std::unordered_map<std::wstring, ModuleInfo*, std::hash<std::wstring>, Compare> m_ModulesMap;
+	std::map<std::wstring, ModuleInfo*, Compare> m_ModulesMap;
 	std::vector<std::unique_ptr<ModuleInfo>> m_Modules;
 	std::unordered_map<HTREEITEM, std::unique_ptr<ModuleTreeInfo>> m_TreeItems;
 };

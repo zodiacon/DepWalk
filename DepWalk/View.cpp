@@ -62,7 +62,7 @@ CString CView::GetColumnText(HWND h, int row, int col) const {
 			case ColumnType::Name: return mi->Name.c_str();
 			case ColumnType::Path: return mi->FullPath.c_str();
 			case ColumnType::FileSize:
-				if (!mi->IsApiSet) {
+				if (!mi->IsApiSet && mi->PE->IsLoaded()) {
 					WCHAR text[64];
 					::StrFormatByteSize(mi->PE.GetFileSize(), text, _countof(text));
 					return text;
@@ -131,40 +131,85 @@ void CView::OnTreeSelChanged(HWND tree, HTREEITEM hOld, HTREEITEM hNew) {
 	}
 }
 
+void CView::DoSort(SortInfo const* si) {
+}
+
 std::pair<HTREEITEM, ModuleInfo*> CView::ParsePE(PCWSTR name, HTREEITEM hParent, int icon) {
-	auto apiSet = _wcsnicmp(name, L"api-ms-", 7) == 0;
+	auto apiSet = _wcsnicmp(name, L"api-ms-", 7) == 0 || _wcsnicmp(name, L"ext-ms-", 7) == 0;
 	auto fullpath = apiSet ? false : wcschr(name, L'\\') != nullptr;
 	auto mi = std::make_unique<ModuleInfo>();
 	auto m = mi.get();
-	if (!fullpath)
-		mi->Name = name;
-	auto hLib = apiSet || fullpath ? nullptr : ::LoadLibraryEx(name, nullptr, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
-	if(icon < 0)
-		icon = apiSet ? 1 : 0;
-	mi->IsApiSet = apiSet;
-	if (apiSet) {
+	bool newModule = false;
+
+	if (m_ModulesMap.empty()) {
+		m_ModulesMap.insert({ name, m });
+		m_Modules.push_back(std::move(mi));
+	}
+	else if (fullpath) {
 		if (auto it = m_ModulesMap.find(name); it != m_ModulesMap.end())
 			m = it->second;
 	}
 
+	if (!fullpath)
+		m->Name = name;
+	auto hLib = apiSet || fullpath ? nullptr : ::LoadLibraryEx(name, nullptr, DONT_RESOLVE_DLL_REFERENCES);
+	auto ext = wcsrchr(name, L'.');
+	if (!apiSet && !fullpath && hLib == nullptr && _wcsicmp(ext, L".sys") == 0) {
+		//
+		// try in drivers directory for sys files
+		//
+		static std::wstring driversDir;
+		if (driversDir.empty()) {
+			WCHAR path[MAX_PATH];
+			::GetSystemDirectory(path, _countof(path));
+			wcscat_s(path, L"\\Drivers\\");
+			driversDir = path;
+		}
+		hLib = ::LoadLibraryEx((driversDir + name).c_str(), nullptr, DONT_RESOLVE_DLL_REFERENCES);
+		if (hLib)
+			m->FullPath = driversDir + name;
+	}
+
+	if (icon < 0) {
+		icon = apiSet ? 1 : 0;
+		if (icon == 0) {
+			if (_wcsicmp(ext, L".sys") == 0)
+				icon = 3;
+		}
+	}
+	m->IsApiSet = apiSet;
+	if (apiSet || fullpath) {
+		if (auto it = m_ModulesMap.find(name); it != m_ModulesMap.end())
+			m = it->second;
+		else {
+			newModule = true;
+			m_ModulesMap.insert({ name, m });
+		}
+	}
 	HTREEITEM hItem{ nullptr };
 	if (hLib || fullpath) {
 		WCHAR path[MAX_PATH];
 		DWORD chars = 1;
 		if (!fullpath) {
 			chars = ::GetModuleFileName(hLib, path, _countof(path));
-			::FreeLibrary(hLib);
+			if (hLib)
+				::FreeLibrary(hLib);
 			if (chars)
 				name = path;
 		}
-		if (auto it = m_ModulesMap.find(name); it != m_ModulesMap.end())
+		if (auto it = m_ModulesMap.find(name); it != m_ModulesMap.end()) {
 			m = it->second;
+		}
+		else {
+			m_ModulesMap.insert({ name, m });
+			newModule = true;
+		}
 
 		m->FullPath = name;
 		if (m->Name.empty())
 			m->Name = wcsrchr(name, L'\\') + 1;
 		hItem = m_Tree.InsertItem(m->Name.c_str(), icon, icon, hParent, TVI_LAST);
-		if ((chars && m->PE.Open(name))) {
+		if ((chars && !m->PE->IsLoaded() && m->PE.Open(name))) {
 			auto imports = m->PE->GetImport();
 			if (imports) {
 				for (auto& lib : *imports) {
@@ -182,17 +227,18 @@ std::pair<HTREEITEM, ModuleInfo*> CView::ParsePE(PCWSTR name, HTREEITEM hParent,
 		if (apiSet) {
 			// TODO
 		}
+		if (!apiSet && m->FullPath.empty())
+			icon = 2;
 		hItem = m_Tree.InsertItem(m->Name.c_str(), icon, icon, hParent, TVI_LAST);
 	}
 	ATLASSERT(hItem);
 	m->Icon = icon;
-	if (!m_ModulesMap.contains(name)) {
-		if (mi->PE->IsLoaded()) {
-			auto exports = mi->PE->GetExport();
-			if (exports)
-				BuildExports(m, exports);
-		}
-		m_ModulesMap.insert({ name, m });
+	if (m->PE->IsLoaded() && m->Exports.empty()) {
+		auto exports = m->PE->GetExport();
+		if (exports)
+			BuildExports(m, exports);
+	}
+	if (newModule) {
 		m_Modules.push_back(std::move(mi));
 	}
 	return { hItem, m };
@@ -229,7 +275,7 @@ LRESULT CView::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOO
 	m_HSplitter.SetSplitterPanes(m_ImportsList, m_ExportsList);
 
 	{
-		UINT icons[] = { IDI_DLL, IDI_INTERFACE };
+		UINT icons[] = { IDI_DLL, IDI_INTERFACE, IDI_MOD_ERROR, IDI_SYSFILE };
 		CImageList images;
 		images.Create(16, 16, ILC_COLOR32 | ILC_MASK, 4, 4);
 		for (auto icon : icons)

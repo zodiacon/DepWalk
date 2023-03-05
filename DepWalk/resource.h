@@ -16,9 +16,11 @@
 #define IDI_COPY                        211
 #define IDI_ICON2                       212
 #define IDI_FUNC                        212
+#define IDI_MOD_ERROR                   213
+#define IDI_ICON1                       214
+#define IDI_SYSFILE                     214
 #define IDC_VERSION                     1000
 #define IDC_COPYRIGHT                   1001
-#define IDC_SYSLINK1                    1002
 #define IDC_SYSLINK                     1002
 #define ID_WINDOW_CLOSE                 32772
 #define ID_WINDOW_CLOSE_ALL             32773
@@ -31,7 +33,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        213
+#define _APS_NEXT_RESOURCE_VALUE        215
 #define _APS_NEXT_COMMAND_VALUE         32779
 #define _APS_NEXT_CONTROL_VALUE         1003
 #define _APS_NEXT_SYMED_VALUE           101

@@ -122,6 +122,10 @@ IDI_COPY                ICON                    "res\\copy.ico"
 
 IDI_FUNC                ICON                    "res\\function.ico"
 
+IDI_MOD_ERROR           ICON                    "res\\Error.ico"
+
+IDI_SYSFILE             ICON                    "res\\sysfile.ico"
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
