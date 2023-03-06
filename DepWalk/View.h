@@ -15,11 +15,16 @@ struct ModuleInfo {
 	int Icon;
 	bool IsApiSet;
 	mutable ULONG64 FileTime{ 0 };
-
 	CString const& GetFileTime() const;
+	ULONG64 GetImageBase() const;
+	WORD GetArch() const;
+	WORD GetSubsystem() const;
 
 private:
 	mutable CString m_FileTimeAsString;
+	mutable ULONG64 m_ImageBase{ 0 };
+	mutable WORD m_Arch{ 0 };
+	mutable WORD m_Subsystem{ 0 };
 };
 
 struct ModuleTreeInfo {
@@ -43,6 +48,8 @@ public:
 
 	BOOL PreTranslateMessage(MSG* pMsg);
 	static CString UndecorateName(PCSTR name);
+	static PCWSTR MachineTypeToString(WORD arch);
+	static CString SubsystemToString(uint32_t type);
 
 protected:
 	BEGIN_MSG_MAP(CView)
@@ -60,7 +67,7 @@ protected:
 
 private:
 	enum class ColumnType {
-		Name, Path, FileTime, LinkTime, FileSize, LinkChecksum, Arch,
+		Name, Path, FileTime, LinkTime, FileSize, LinkChecksum, Arch, Subsystem, ImageBase, OSVersion,
 		Hint, Ordinal, UndecoratedName, ForwardedName, RVA, NameRVA,
 	};
 

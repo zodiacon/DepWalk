@@ -54,6 +54,42 @@ HICON CView::GetMainIcon() const {
 	return m_Tree.GetImageList().GetIcon(m_Tree.GetImageList().GetImageCount() - 1);
 }
 
+PCWSTR CView::MachineTypeToString(WORD type) {
+	switch (type) {
+		case IMAGE_FILE_MACHINE_I386: return L"x86";
+		case IMAGE_FILE_MACHINE_ARM: return L"ARM";
+		case IMAGE_FILE_MACHINE_ARMNT: return L"ARM NT";
+		case IMAGE_FILE_MACHINE_IA64: return L"IA64";
+		case IMAGE_FILE_MACHINE_AMD64: return L"x64";
+		case IMAGE_FILE_MACHINE_ARM64: return L"ARM 64";
+	}
+	return L"";
+}
+
+CString CView::SubsystemToString(uint32_t type) {
+	CString subsys;
+	switch (type) {
+		case IMAGE_SUBSYSTEM_UNKNOWN: return L"";
+		case IMAGE_SUBSYSTEM_NATIVE: subsys = L"Native"; break;
+		case IMAGE_SUBSYSTEM_WINDOWS_GUI: subsys = L"Window GUI"; break;
+		case IMAGE_SUBSYSTEM_WINDOWS_CUI: subsys = L"Windows CUI"; break;
+		case IMAGE_SUBSYSTEM_OS2_CUI: subsys = L"OS2 CUI"; break;
+		case IMAGE_SUBSYSTEM_POSIX_CUI: subsys = L"POSIX CUI"; break;
+		case IMAGE_SUBSYSTEM_NATIVE_WINDOWS: subsys = L"Native Windows 9x"; break;
+		case IMAGE_SUBSYSTEM_WINDOWS_CE_GUI: subsys = L"Windows CE GUI"; break;
+		case IMAGE_SUBSYSTEM_EFI_APPLICATION: subsys = L"EFI Application"; break;
+		case IMAGE_SUBSYSTEM_EFI_BOOT_SERVICE_DRIVER: subsys = L"EFI Boot Service Driver"; break;
+		case IMAGE_SUBSYSTEM_EFI_RUNTIME_DRIVER: subsys = L"EFI Runtime Driver"; break;
+		case IMAGE_SUBSYSTEM_EFI_ROM: subsys = L"EFI ROM"; break;
+		case IMAGE_SUBSYSTEM_XBOX: subsys = L"XBOX"; break;
+		case IMAGE_SUBSYSTEM_WINDOWS_BOOT_APPLICATION: subsys = L"Windows Boot Application"; break;
+		default: subsys = L"(Unknown)"; break;
+	}
+	CString temp;
+	temp.Format(L" (%d)\n", (int)type);
+	return subsys + temp;
+}
+
 CString CView::GetColumnText(HWND h, int row, int col) const {
 	auto tag = GetColumnManager(h)->GetColumnTag<ColumnType>(col);
 	if (h == m_ModuleList) {
@@ -70,6 +106,9 @@ CString CView::GetColumnText(HWND h, int row, int col) const {
 				break;
 			case ColumnType::FileTime:
 				return mi->FullPath.empty() ? L"" : (PCWSTR)mi->GetFileTime();
+			case ColumnType::ImageBase: return mi->GetImageBase() == 0 ? L"" : std::format(L"0x{:X}", mi->GetImageBase()).c_str();
+			case ColumnType::Arch: return MachineTypeToString(mi->GetArch());
+			case ColumnType::Subsystem: return SubsystemToString(mi->GetSubsystem());
 
 		}
 	}
@@ -124,6 +163,8 @@ void CView::OnTreeSelChanged(HWND tree, HTREEITEM hOld, HTREEITEM hNew) {
 		m_ImportsList.SetItemCount((int)it->second->Imports.size());
 		auto mi = it->second->Module;
 		m_ExportsList.SetItemCount(mi ? (int)mi->Exports.size() : 0);
+		Sort(m_ExportsList);
+		Sort(m_ImportsList);
 	}
 	else {
 		m_ImportsList.SetItemCount(0);
@@ -142,10 +183,41 @@ void CView::DoSort(SortInfo const* si) {
 				case ColumnType::Path: return SortHelper::Sort(m1->FullPath, m2->FullPath, asc);
 				case ColumnType::FileTime: return SortHelper::Sort(m1->FileTime, m2->FileTime, asc);
 				case ColumnType::FileSize: return SortHelper::Sort(m1->PE.GetFileSize(), m2->PE.GetFileSize(), asc);
+				case ColumnType::ImageBase: return SortHelper::Sort(m1->GetImageBase(), m2->GetImageBase(), asc);
+				case ColumnType::Arch: return SortHelper::Sort(m1->GetArch(), m2->GetArch(), asc);
+				case ColumnType::Subsystem: return SortHelper::Sort(m1->GetSubsystem(), m2->GetSubsystem(), asc);
 			}
 			return false;
 		};
 		std::ranges::sort(m_Modules, compare);
+	}
+	else if (si->hWnd == m_ImportsList) {
+		auto const& mod = m_TreeItems.at(m_Tree.GetSelectedItem());
+
+		auto compare = [&](auto& f1, auto& f2) {
+			switch (tag) {
+				case ColumnType::Name: return SortHelper::Sort(f1.FuncName, f2.FuncName, asc);
+				case ColumnType::Hint: return SortHelper::Sort(f1.ImpByName.Hint, f2.ImpByName.Hint, asc);
+				case ColumnType::Ordinal: return SortHelper::Sort(f1.ImpByName.Name[0] ? 0 : f1.unThunk.Thunk32.u1.Ordinal, f2.ImpByName.Name[0] ? 0 : f2.unThunk.Thunk32.u1.Ordinal, asc);
+			}
+			return false;
+		};
+		std::ranges::sort(mod->Imports, compare);
+	}
+	else {
+		auto const& mod = m_TreeItems.at(m_Tree.GetSelectedItem());
+
+		auto compare = [&](auto& f1, auto& f2) {
+			switch (tag) {
+				case ColumnType::Name: return SortHelper::Sort(f1.FuncName, f2.FuncName, asc);
+				case ColumnType::ForwardedName: return SortHelper::Sort(f1.ForwarderName, f2.ForwarderName, asc);
+				case ColumnType::Ordinal: return SortHelper::Sort(f1.Ordinal, f2.Ordinal, asc);
+				case ColumnType::RVA: return SortHelper::Sort(f1.FuncRVA, f2.FuncRVA, asc);
+				case ColumnType::NameRVA: return SortHelper::Sort(f1.NameRVA, f2.NameRVA, asc);
+			}
+			return false;
+		};
+		std::ranges::sort(mod->Module->Exports, compare);
 	}
 }
 
@@ -320,6 +392,10 @@ LRESULT CView::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOO
 	cm->AddColumn(L"Full Path", LVCFMT_LEFT, 350, ColumnType::Path);
 	cm->AddColumn(L"File Size", LVCFMT_RIGHT, 100, ColumnType::FileSize);
 	cm->AddColumn(L"File Time", LVCFMT_LEFT, 150, ColumnType::FileTime);
+	cm->AddColumn(L"Link Time Stamp", LVCFMT_LEFT, 100, ColumnType::LinkTime);
+	cm->AddColumn(L"Arch", LVCFMT_LEFT, 60, ColumnType::Arch);
+	cm->AddColumn(L"Image Base", LVCFMT_RIGHT, 100, ColumnType::ImageBase);
+	cm->AddColumn(L"Subsystem", LVCFMT_LEFT, 70, ColumnType::Subsystem);
 
 	cm = GetColumnManager(m_ImportsList);
 	cm->AddColumn(L"Name", LVCFMT_LEFT, 250, ColumnType::Name);
@@ -352,4 +428,28 @@ CString const& ModuleInfo::GetFileTime() const {
 		}
 	}
 	return m_FileTimeAsString;
+}
+
+ULONG64 ModuleInfo::GetImageBase() const {
+	if (m_ImageBase == 0 && PE) {
+		m_ImageBase = PE->GetFileInfo()->IsPE64 ? PE->GetNTHeader()->NTHdr64.OptionalHeader.ImageBase : PE->GetNTHeader()->NTHdr32.OptionalHeader.ImageBase;
+	}
+	return m_ImageBase;
+}
+
+WORD ModuleInfo::GetArch() const {
+	if (m_Arch == 0 && PE) {
+		m_Arch = PE->GetNTHeader()->NTHdr64.FileHeader.Machine;
+	}
+	return m_Arch;
+}
+
+WORD ModuleInfo::GetSubsystem() const {
+	if (!PE)
+		return 0;
+
+	if (m_Subsystem == 0) {
+		m_Subsystem = PE->GetFileInfo()->IsPE64 ? PE->GetNTHeader()->NTHdr64.OptionalHeader.Subsystem : PE->GetNTHeader()->NTHdr32.OptionalHeader.Subsystem;
+	}
+	return m_Subsystem;
 }
