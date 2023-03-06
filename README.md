@@ -1,8 +1,8 @@
 # DepWalk
 
-A modern take on the classic Dependency Walker tool
+A modern take on the classic *Dependency Walker* (depends) tool
 
-(Very mucg a work in progress)
+(Very much a work in progress)
 
 ![](https://github.com/zodiacon/DepWalk/blob/master/depwalk.png)
 
