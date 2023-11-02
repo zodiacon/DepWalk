@@ -4,6 +4,7 @@
 #include "View.h"
 #include "MainFrm.h"
 #include <ToolbarHelper.h>
+#include <thread>
 
 const int WINDOW_MENU_POSITION = 5;
 
