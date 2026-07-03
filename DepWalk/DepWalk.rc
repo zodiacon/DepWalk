@@ -57,6 +57,11 @@ BEGIN
         MENUITEM "&Save\tCtrl+S",               ID_FILE_SAVE
         MENUITEM "Save &As...",                 ID_FILE_SAVE_AS
         MENUITEM SEPARATOR
+        POPUP "&Recent Files"
+        BEGIN
+            MENUITEM "(Empty)",                     ID_RECENTFILES_
+        END
+        MENUITEM SEPARATOR
         MENUITEM "E&xit",                       ID_APP_EXIT
     END
     POPUP "&Edit"
@@ -215,7 +220,7 @@ BEGIN
             VALUE "FileDescription", "DepWalk - Dependency Walker Redux"
             VALUE "FileVersion", "0.2.1.0"
             VALUE "InternalName", "DepWalk"
-            VALUE "LegalCopyright", "©2023-2025 Pavel Yosifovich"
+            VALUE "LegalCopyright", "©2023-2026 Pavel Yosifovich"
             VALUE "OriginalFilename", "DepWalk.exe"
             VALUE "ProductName", "Dependencly Walker X"
             VALUE "ProductVersion", "0.2.1.0"

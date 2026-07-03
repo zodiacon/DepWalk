@@ -67,6 +67,11 @@ LRESULT CMainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/
 	if (AppSettings::Get().DarkMode())
 		UISetCheck(ID_OPTIONS_DARKMODE, true);
 
+	SetAlwaysOnTop(AppSettings::Get().AlwaysOnTop());
+
+	m_RecentFiles.Set(AppSettings::Get().RecentFiles());
+	UpdateRecentFilesMenu();
+
 	return 0;
 }
 
@@ -80,6 +85,11 @@ void CMainFrame::InitMenu(HMENU hMenu) {
 	};
 
 	WTLHelper::InitMenu(hMenu, commands, _countof(commands));
+}
+
+void CMainFrame::SetAlwaysOnTop(bool alwaysOnTop) {
+	SetWindowPos(alwaysOnTop ? HWND_TOPMOST : HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOMOVE);
+	UISetCheck(ID_OPTIONS_ALWAYSONTOP, alwaysOnTop);
 }
 
 LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled) {
@@ -106,19 +116,58 @@ LRESULT CMainFrame::OnFileOpen(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCt
 	WTLHelper::SuspendHook();
 	auto ok = dlg.DoModal() == IDOK;
 	WTLHelper::ResumeHook();
-	if(ok) {
-		auto pView = new CView(this);
-		pView->Create(m_view, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0);
-		CWaitCursor wait;
-		if (!pView->ParseModules(dlg.m_szFileName)) {
-			pView->DestroyWindow();
-			return 0;
-		}
-		auto hIcon = pView->GetMainIcon();
-		int index = CImageList(m_view.GetImageList()).AddIcon(hIcon);
-		m_view.AddPage(pView->m_hWnd, dlg.m_szFileTitle, index, pView);
-	}
+	if (ok)
+		OpenFile(dlg.m_szFileName);
 
+	return 0;
+}
+
+bool CMainFrame::OpenFile(PCWSTR path) {
+	auto pView = new CView(this);
+	pView->Create(m_view, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0);
+	CWaitCursor wait;
+	if (!pView->ParseModules(path)) {
+		pView->DestroyWindow();
+		return false;
+	}
+	auto hIcon = pView->GetMainIcon();
+	int index = CImageList(m_view.GetImageList()).AddIcon(hIcon);
+	CString title(path);
+	title = title.Mid(title.ReverseFind(L'\\') + 1);
+	m_view.AddPage(pView->m_hWnd, title, index, pView);
+
+	m_RecentFiles.AddFile(path);
+	AppSettings::Get().RecentFiles(m_RecentFiles.Files());
+	UpdateRecentFilesMenu();
+
+	return true;
+}
+
+void CMainFrame::UpdateRecentFilesMenu() {
+	if (m_RecentFiles.IsEmpty())
+		return;
+
+	auto menu = CMenuHandle(GetMenu()).GetSubMenu(0);
+	CString text;
+	int i = 0;
+	for (; ; i++) {
+		menu.GetMenuString(i, text.GetBuffer(128), 128, MF_BYPOSITION);
+		text.ReleaseBuffer();
+		if (text == L"&Recent Files")
+			break;
+	}
+	menu = menu.GetSubMenu(i);
+	while (menu.DeleteMenu(0, MF_BYPOSITION))
+		;
+
+	i = 0;
+	for (auto& file : m_RecentFiles.Files())
+		menu.AppendMenu(MF_BYPOSITION, ATL_IDS_MRU_FILE + i++, file.c_str());
+}
+
+LRESULT CMainFrame::OnRecentFile(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/) {
+	auto& path = m_RecentFiles.Files()[wID - ATL_IDS_MRU_FILE];
+	OpenFile(path.c_str());
 	return 0;
 }
 
@@ -191,5 +240,12 @@ LRESULT CMainFrame::OnUpdateDarkMode(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*
 	SendMessageToDescendants(WM_UPDATE_DARKMODE);
 	SendMessageToDescendants(::RegisterWindowMessage(L"WTLHelperUpdateTheme"));
 
+	return 0;
+}
+
+LRESULT CMainFrame::OnAlwaysOnTop(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/) {
+	auto alwaysOnTop = !(GetExStyle() & WS_EX_TOPMOST);
+	SetAlwaysOnTop(alwaysOnTop);
+	AppSettings::Get().AlwaysOnTop(alwaysOnTop);
 	return 0;
 }
