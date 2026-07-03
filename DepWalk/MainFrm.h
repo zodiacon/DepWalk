@@ -5,15 +5,14 @@
 #pragma once
 
 #include "Interfaces.h"
-#include <CustomTabView.h>
-#include <OwnerDrawnMenu.h>
+#include <NativeCustomTabView.h>
+#include <WTLHelper.h>
 
 class CMainFrame :
 	public CFrameWindowImpl<CMainFrame>,
 	public CAutoUpdateUI<CMainFrame>,
-	public COwnerDrawnMenu<CMainFrame>,
 	public IMainFrame,
-	public CMessageFilter, 
+	public CMessageFilter,
 	public CIdleHandler {
 public:
 	DECLARE_FRAME_WND_CLASS(NULL, IDR_MAINFRAME)
@@ -30,12 +29,13 @@ public:
 		COMMAND_ID_HANDLER(ID_HELP_ABOUTWINDOWS, OnAboutWindows)
 		COMMAND_ID_HANDLER(ID_WINDOW_CLOSE, OnWindowClose)
 		COMMAND_ID_HANDLER(ID_WINDOW_CLOSE_ALL, OnWindowCloseAll)
+		COMMAND_ID_HANDLER(ID_OPTIONS_DARKMODE, OnToggleDarkMode)
 		COMMAND_RANGE_HANDLER(ID_WINDOW_TABFIRST, ID_WINDOW_TABLAST, OnWindowActivate)
+		MESSAGE_HANDLER(WM_UPDATE_DARKMODE, OnUpdateDarkMode)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_DESTROY, OnDestroy)
 		CHAIN_MSG_MAP(CAutoUpdateUI<CMainFrame>)
 		CHAIN_MSG_MAP(CFrameWindowImpl<CMainFrame>)
-		CHAIN_MSG_MAP(COwnerDrawnMenu<CMainFrame>)
 	END_MSG_MAP()
 
 private:
@@ -57,6 +57,8 @@ private:
 	LRESULT OnWindowClose(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnWindowCloseAll(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnWindowActivate(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnToggleDarkMode(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnUpdateDarkMode(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 
-	CCustomTabView m_view;
+	CNativeCustomTabView m_view;
 };

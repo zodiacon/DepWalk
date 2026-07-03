@@ -3,6 +3,7 @@
 #include "AboutDlg.h"
 #include "View.h"
 #include "MainFrm.h"
+#include "AppSettings.h"
 #include <ToolbarHelper.h>
 #include <thread>
 
@@ -34,7 +35,8 @@ LRESULT CMainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/
 
 	CreateSimpleStatusBar();
 
-	m_hWndClient = m_view.Create(m_hWnd, rcDefault, nullptr, 
+	m_view.m_bTabCloseButton = FALSE;
+	m_hWndClient = m_view.Create(m_hWnd, rcDefault, nullptr,
 		WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN);
 	CImageList images;
 	images.Create(16, 16, ILC_COLOR32 | ILC_MASK, 4, 4);
@@ -60,33 +62,29 @@ LRESULT CMainFrame::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/
 	}
 
 	InitMenu(GetMenu());
-	AddMenu(GetMenu());
+	UIAddMenu(GetMenu());
+
+	if (AppSettings::Get().DarkMode())
+		UISetCheck(ID_OPTIONS_DARKMODE, true);
 
 	return 0;
 }
 
 void CMainFrame::InitMenu(HMENU hMenu) {
-	struct {
-		int id;
-		UINT icon;
-		HICON hIcon{ nullptr };
-	} const commands[] = {
+	MenuItemData const commands[] = {
 		{ ID_EDIT_COPY, IDI_COPY },
 		{ ID_FILE_OPEN, IDI_OPEN },
 		{ ID_FILE_SAVE, IDI_SAVE },
 		{ ID_WINDOW_CLOSE, IDI_WIN_CLOSE },
 		{ ID_WINDOW_CLOSE_ALL, IDI_WIN_CLOSEALL },
-
 	};
-	for (auto& cmd : commands) {
-		if (cmd.icon)
-			AddCommand(cmd.id, cmd.icon);
-		else
-			AddCommand(cmd.id, cmd.hIcon);
-	}
+
+	WTLHelper::InitMenu(hMenu, commands, _countof(commands));
 }
 
 LRESULT CMainFrame::OnDestroy(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& bHandled) {
+	AppSettings::Get().Save();
+
 	// unregister message filtering and idle updates
 	CMessageLoop* pLoop = _Module.GetMessageLoop();
 	ATLASSERT(pLoop != NULL);
@@ -105,9 +103,9 @@ LRESULT CMainFrame::OnFileExit(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCt
 LRESULT CMainFrame::OnFileOpen(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/) {
 	CSimpleFileDialog dlg(TRUE, nullptr, nullptr, OFN_EXPLORER | OFN_ENABLESIZING,
 		L"PE Files\0*.exe;*.dll;*.ocx;*.efi\0All Files\0*.*\0", m_hWnd);
-	ThemeHelper::Suspend();
+	WTLHelper::SuspendHook();
 	auto ok = dlg.DoModal() == IDOK;
-	ThemeHelper::Resume();
+	WTLHelper::ResumeHook();
 	if(ok) {
 		auto pView = new CView(this);
 		pView->Create(m_view, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0);
@@ -173,6 +171,25 @@ LRESULT CMainFrame::OnWindowCloseAll(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*
 LRESULT CMainFrame::OnWindowActivate(WORD /*wNotifyCode*/, WORD wID, HWND /*hWndCtl*/, BOOL& /*bHandled*/) {
 	int nPage = wID - ID_WINDOW_TABFIRST;
 	m_view.SetActivePage(nPage);
+
+	return 0;
+}
+
+LRESULT CMainFrame::OnToggleDarkMode(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/) {
+	auto& settings = AppSettings::Get();
+	settings.DarkMode(!settings.DarkMode());
+	PostMessage(WM_UPDATE_DARKMODE, 0, 0);
+	return 0;
+}
+
+LRESULT CMainFrame::OnUpdateDarkMode(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/) {
+	auto& settings = AppSettings::Get();
+
+	WTLHelper::SwitchToMode(settings.DarkMode() ? DarkModeKind::Dark : DarkModeKind::Light, m_hWnd);
+	UISetCheck(ID_OPTIONS_DARKMODE, settings.DarkMode());
+	DrawMenuBar();
+	SendMessageToDescendants(WM_UPDATE_DARKMODE);
+	SendMessageToDescendants(::RegisterWindowMessage(L"WTLHelperUpdateTheme"));
 
 	return 0;
 }

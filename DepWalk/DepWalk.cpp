@@ -4,9 +4,11 @@
 #include "pch.h"
 #include "resource.h"
 #include "MainFrm.h"
-#include <ThemeHelper.h>
+#include "AppSettings.h"
+#include <WTLHelper.h>
 
 CAppModule _Module;
+AppSettings g_Settings;
 
 int Run(LPCTSTR /*lpstrCmdLine*/ = NULL, int nCmdShow = SW_SHOWDEFAULT) {
 	CMessageLoop theLoop;
@@ -33,10 +35,13 @@ int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lp
 
 	AtlInitCommonControls(ICC_COOL_CLASSES | ICC_BAR_CLASSES | ICC_LISTVIEW_CLASSES);
 
+	auto& settings = AppSettings::Get();
+	settings.LoadFromKey(L"SOFTWARE\\ScorpioSoftware\\DepWalk");
+
 	hRes = _Module.Init(NULL, hInstance);
 	ATLASSERT(SUCCEEDED(hRes));
 
-	ThemeHelper::Init();
+	WTLHelper::InitDarkMode(settings.DarkMode() ? DarkModeKind::Dark : DarkModeKind::Light);
 
 	int nRet = Run(lpstrCmdLine, nCmdShow);
 
