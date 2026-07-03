@@ -29,13 +29,17 @@
 #define ID_TOOLS_SYSTEMINFORMATION      32777
 #define ID_HELP_ABOUTWINDOWS            32778
 #define ID_RECENTFILES_                 32779
+#define ID_TREE_LOCATEMODULE            32780
+#define ID_MODULE_LOCATEINMODULELIST    32781
+#define ID_OPTIONS_FONT                 32782
+#define ID_OPTIONS_RESETFONT            32783
 
 // Next default values for new objects
 //
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        215
-#define _APS_NEXT_COMMAND_VALUE         32780
+#define _APS_NEXT_COMMAND_VALUE         32784
 #define _APS_NEXT_CONTROL_VALUE         1003
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

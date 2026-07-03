@@ -7,7 +7,7 @@
 #include <ToolbarHelper.h>
 #include <thread>
 
-const int WINDOW_MENU_POSITION = 5;
+const int WINDOW_MENU_POSITION = 6;
 
 BOOL CMainFrame::PreTranslateMessage(MSG* pMsg) {
 	if (CFrameWindowImpl<CMainFrame>::PreTranslateMessage(pMsg))
@@ -248,4 +248,43 @@ LRESULT CMainFrame::OnAlwaysOnTop(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWn
 	SetAlwaysOnTop(alwaysOnTop);
 	AppSettings::Get().AlwaysOnTop(alwaysOnTop);
 	return 0;
+}
+
+LRESULT CMainFrame::OnOptionsFont(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/) {
+	auto lf = AppSettings::Get().Font();
+	if (lf.lfFaceName[0] == 0)
+		::SystemParametersInfo(SPI_GETICONTITLELOGFONT, sizeof(lf), &lf, 0);
+
+	CFontDialog dlg(&lf, CF_SCREENFONTS | CF_EFFECTS, nullptr, m_hWnd);
+
+	// The classic ChooseFont dialog draws its Font/Font style list boxes itself
+	// (owner-drawn, to show the TrueType icon) with hardcoded light colors, so
+	// they never pick up our subclassing. Suspending our own hook isn't enough,
+	// since Windows' own common-dialog rendering still follows the process-wide
+	// dark-mode preference. Flip that preference off for the dialog's lifetime.
+	auto mode = WTLHelper::DarkModeType();
+	WTLHelper::SwitchToMode(DarkModeKind::Light, nullptr);
+	WTLHelper::SuspendHook();
+	auto ok = dlg.DoModal() == IDOK;
+	WTLHelper::ResumeHook();
+	WTLHelper::SwitchToMode(mode, m_hWnd);
+	if (!ok)
+		return 0;
+
+	LOGFONT newFont;
+	dlg.GetCurrentFont(&newFont);
+	ApplyFont(newFont);
+
+	return 0;
+}
+
+LRESULT CMainFrame::OnResetFont(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/) {
+	ApplyFont(LOGFONT{});
+	return 0;
+}
+
+void CMainFrame::ApplyFont(LOGFONT const& lf) {
+	AppSettings::Get().Font(lf);
+	CView::SetAppFont(lf);
+	SendMessageToDescendants(WM_UPDATE_FONT);
 }

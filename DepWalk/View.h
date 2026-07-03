@@ -44,7 +44,10 @@ public:
 	CString GetColumnText(HWND h, int row, int col) const;
 	int GetRowImage(HWND h, int row, int col) const;
 	void OnTreeSelChanged(HWND tree, HTREEITEM hOld, HTREEITEM hNew);
+	bool OnTreeRightClick(HWND tree, HTREEITEM hItem, POINT const& pt);
 	void DoSort(SortInfo const* si);
+
+	static void SetAppFont(LOGFONT const& lf);
 
 	BOOL PreTranslateMessage(MSG* pMsg);
 	static CString UndecorateName(PCSTR name);
@@ -55,6 +58,8 @@ protected:
 	BEGIN_MSG_MAP(CView)
 		MESSAGE_HANDLER(WM_SETFOCUS, OnSetFocus)
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
+		MESSAGE_HANDLER(WM_UPDATE_FONT, OnUpdateFont)
+		COMMAND_ID_HANDLER(ID_TREE_LOCATEMODULE, OnLocateModule)
 		CHAIN_MSG_MAP(BaseFrame)
 		CHAIN_MSG_MAP(CVirtualListView<CView>)
 		CHAIN_MSG_MAP(CTreeViewHelper<CView>)
@@ -73,14 +78,18 @@ private:
 
 	std::pair<HTREEITEM, ModuleInfo*> ParsePE(PCWSTR name, HTREEITEM hParent, int icon = -1);
 	void BuildExports(ModuleInfo* mi, libpe::PEExport* exports) const;
+	void ApplyFont();
 
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnSetFocus(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
+	LRESULT OnLocateModule(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnUpdateFont(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 
 	CListViewCtrl m_ModuleList, m_ImportsList, m_ExportsList;
 	CTreeViewCtrl m_Tree;
 	CCustomHorSplitterWindow m_HSplitter, m_MainSplitter;
 	CCustomSplitterWindow m_VSplitter;
+	inline static CFont s_Font;
 
 	struct Compare {
 		bool operator()(std::wstring const& s1, std::wstring const& s2) const {

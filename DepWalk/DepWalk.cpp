@@ -4,6 +4,7 @@
 #include "pch.h"
 #include "resource.h"
 #include "MainFrm.h"
+#include "View.h"
 #include "AppSettings.h"
 #include <WTLHelper.h>
 
@@ -42,6 +43,7 @@ int WINAPI _tWinMain(HINSTANCE hInstance, HINSTANCE /*hPrevInstance*/, LPTSTR lp
 	ATLASSERT(SUCCEEDED(hRes));
 
 	WTLHelper::InitDarkMode(settings.DarkMode() ? DarkModeKind::Dark : DarkModeKind::Light);
+	CView::SetAppFont(settings.Font());
 
 	int nRet = Run(lpstrCmdLine, nCmdShow);
 

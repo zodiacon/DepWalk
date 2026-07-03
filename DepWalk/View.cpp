@@ -172,6 +172,54 @@ void CView::OnTreeSelChanged(HWND tree, HTREEITEM hOld, HTREEITEM hNew) {
 	}
 }
 
+bool CView::OnTreeRightClick(HWND tree, HTREEITEM hItem, POINT const& pt) {
+	m_Tree.SelectItem(hItem);
+
+	CMenu menu;
+	menu.CreatePopupMenu();
+	menu.AppendMenu(MF_STRING, ID_TREE_LOCATEMODULE, L"&Locate in Module List");
+	menu.TrackPopupMenu(TPM_RIGHTBUTTON | TPM_LEFTALIGN, pt.x, pt.y, m_hWnd);
+
+	return true;
+}
+
+void CView::SetAppFont(LOGFONT const& lf) {
+	if(s_Font)
+		s_Font.DeleteObject();
+	s_Font.CreateFontIndirect(&lf);
+}
+
+void CView::ApplyFont() {
+	if (!s_Font)
+		return;
+
+	m_Tree.SetFont(s_Font);
+	m_ModuleList.SetFont(s_Font);
+	m_ImportsList.SetFont(s_Font);
+	m_ExportsList.SetFont(s_Font);
+}
+
+LRESULT CView::OnUpdateFont(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/) {
+	ApplyFont();
+	return 0;
+}
+
+LRESULT CView::OnLocateModule(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/) {
+	auto it = m_TreeItems.find(m_Tree.GetSelectedItem());
+	auto mi = it == m_TreeItems.end() ? nullptr : it->second->Module;
+
+	auto pos = mi ? std::ranges::find_if(m_Modules, [mi](auto& m) { return m.get() == mi; }) : m_Modules.end();
+	if (pos == m_Modules.end()) {
+		::MessageBeep((UINT)-1);
+		return 0;
+	}
+
+	m_ModuleList.SelectItem(static_cast<int>(pos - m_Modules.begin()));
+	m_ModuleList.SetFocus();
+
+	return 0;
+}
+
 void CView::DoSort(SortInfo const* si) {
 	auto asc = si->SortAscending;
 	auto tag = GetColumnManager(si->hWnd)->GetColumnTag<ColumnType>(si->SortColumn);
@@ -410,6 +458,8 @@ LRESULT CView::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOO
 	cm->AddColumn(L"Function RVA", LVCFMT_RIGHT, 100, ColumnType::RVA);
 	cm->AddColumn(L"Name RVA", LVCFMT_RIGHT, 100, ColumnType::NameRVA);
 	cm->AddColumn(L"Undecorated Name", LVCFMT_LEFT, 250, ColumnType::UndecoratedName);
+
+	ApplyFont();
 
 	return 0;
 }

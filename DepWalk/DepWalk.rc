@@ -73,14 +73,20 @@ BEGIN
         MENUITEM "&Toolbar",                    ID_VIEW_TOOLBAR
         MENUITEM "&Status Bar",                 ID_VIEW_STATUS_BAR
     END
-    POPUP "&Options"
+    POPUP "&Module"
     BEGIN
-        MENUITEM "&Dark Mode",                  ID_OPTIONS_DARKMODE
-        MENUITEM "&Always On Top",              ID_OPTIONS_ALWAYSONTOP
+        MENUITEM "&Locate in Module List",      ID_TREE_LOCATEMODULE
     END
     POPUP "&Tools"
     BEGIN
         MENUITEM "&System Information...",      ID_TOOLS_SYSTEMINFORMATION
+    END
+    POPUP "&Options"
+    BEGIN
+        MENUITEM "&Dark Mode",                  ID_OPTIONS_DARKMODE
+        MENUITEM "&Always On Top",              ID_OPTIONS_ALWAYSONTOP
+        MENUITEM "&Font...",                    ID_OPTIONS_FONT
+        MENUITEM "&Reset Font",                 ID_OPTIONS_RESETFONT
     END
     POPUP "&Window"
     BEGIN
@@ -200,8 +206,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 0,2,1,0
- PRODUCTVERSION 0,2,1,0
+ FILEVERSION 0,3,0,0
+ PRODUCTVERSION 0,3,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -218,12 +224,12 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "Pavel Yosifovich"
             VALUE "FileDescription", "DepWalk - Dependency Walker Redux"
-            VALUE "FileVersion", "0.2.1.0"
+            VALUE "FileVersion", "0.3.0.0"
             VALUE "InternalName", "DepWalk"
-            VALUE "LegalCopyright", "©2023-2026 Pavel Yosifovich"
+            VALUE "LegalCopyright", "ï¿½2023-2026 Pavel Yosifovich"
             VALUE "OriginalFilename", "DepWalk.exe"
             VALUE "ProductName", "Dependencly Walker X"
-            VALUE "ProductVersion", "0.2.1.0"
+            VALUE "ProductVersion", "0.3.0.0"
         END
     END
     BLOCK "VarFileInfo"
