@@ -45,7 +45,9 @@ public:
 	int GetRowImage(HWND h, int row, int col) const;
 	void OnTreeSelChanged(HWND tree, HTREEITEM hOld, HTREEITEM hNew);
 	bool OnTreeRightClick(HWND tree, HTREEITEM hItem, POINT const& pt);
+	bool OnRightClickList(HWND list, int row, int col, POINT const& pt) const;
 	void DoSort(SortInfo const* si);
+	void CopySelected() const;
 
 	static void SetAppFont(LOGFONT const& lf);
 
@@ -60,6 +62,7 @@ protected:
 		MESSAGE_HANDLER(WM_CREATE, OnCreate)
 		MESSAGE_HANDLER(WM_UPDATE_FONT, OnUpdateFont)
 		COMMAND_ID_HANDLER(ID_TREE_LOCATEMODULE, OnLocateModule)
+		COMMAND_ID_HANDLER(ID_EDIT_COPY, OnEditCopy)
 		CHAIN_MSG_MAP(BaseFrame)
 		CHAIN_MSG_MAP(CVirtualListView<CView>)
 		CHAIN_MSG_MAP(CTreeViewHelper<CView>)
@@ -83,6 +86,7 @@ private:
 	LRESULT OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnSetFocus(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 	LRESULT OnLocateModule(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
+	LRESULT OnEditCopy(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/);
 	LRESULT OnUpdateFont(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOOL& /*bHandled*/);
 
 	CListViewCtrl m_ModuleList, m_ImportsList, m_ExportsList;

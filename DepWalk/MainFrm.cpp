@@ -122,6 +122,16 @@ LRESULT CMainFrame::OnFileOpen(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCt
 	return 0;
 }
 
+LRESULT CMainFrame::OnEditCopy(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/) {
+	auto page = m_view.GetActivePage();
+	if (page >= 0) {
+		auto view = (CView*)m_view.GetPageData(page);
+		if (view)
+			view->CopySelected();
+	}
+	return 0;
+}
+
 bool CMainFrame::OpenFile(PCWSTR path) {
 	auto pView = new CView(this);
 	pView->Create(m_view, rcDefault, NULL, WS_CHILD | WS_VISIBLE | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, 0);
@@ -236,6 +246,7 @@ LRESULT CMainFrame::OnUpdateDarkMode(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*
 
 	WTLHelper::SwitchToMode(settings.DarkMode() ? DarkModeKind::Dark : DarkModeKind::Light, m_hWnd);
 	UISetCheck(ID_OPTIONS_DARKMODE, settings.DarkMode());
+	InitMenu(GetMenu());
 	DrawMenuBar();
 	SendMessageToDescendants(WM_UPDATE_DARKMODE);
 	SendMessageToDescendants(::RegisterWindowMessage(L"WTLHelperUpdateTheme"));

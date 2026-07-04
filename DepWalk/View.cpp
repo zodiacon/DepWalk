@@ -6,6 +6,8 @@
 #include "resource.h"
 #include "View.h"
 #include <SortHelper.h>
+#include <ListViewhelper.h>
+#include <ClipboardHelper.h>
 #include <DbgHelp.h>
 
 #pragma comment(lib, "dbghelp")
@@ -174,10 +176,32 @@ void CView::OnTreeSelChanged(HWND tree, HTREEITEM hOld, HTREEITEM hNew) {
 
 bool CView::OnTreeRightClick(HWND tree, HTREEITEM hItem, POINT const& pt) {
 	m_Tree.SelectItem(hItem);
+	m_Tree.SetFocus();
 
 	CMenu menu;
 	menu.CreatePopupMenu();
 	menu.AppendMenu(MF_STRING, ID_TREE_LOCATEMODULE, L"&Locate in Module List");
+	menu.AppendMenu(MF_SEPARATOR);
+	menu.AppendMenu(MF_STRING, ID_EDIT_COPY, L"&Copy");
+	Frame()->InitMenu(menu);
+	menu.TrackPopupMenu(TPM_RIGHTBUTTON | TPM_LEFTALIGN, pt.x, pt.y, m_hWnd);
+
+	return true;
+}
+
+bool CView::OnRightClickList(HWND list, int row, int col, POINT const& pt) const {
+	CListViewCtrl lv(list);
+	if (row < 0)
+		return false;
+
+	if (!(lv.GetItemState(row, LVIS_SELECTED) & LVIS_SELECTED))
+		lv.SelectItem(row);
+	lv.SetFocus();
+
+	CMenu menu;
+	menu.CreatePopupMenu();
+	menu.AppendMenu(MF_STRING, ID_EDIT_COPY, L"&Copy");
+	Frame()->InitMenu(menu);
 	menu.TrackPopupMenu(TPM_RIGHTBUTTON | TPM_LEFTALIGN, pt.x, pt.y, m_hWnd);
 
 	return true;
@@ -217,6 +241,30 @@ LRESULT CView::OnLocateModule(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl
 	m_ModuleList.SelectItem(static_cast<int>(pos - m_Modules.begin()));
 	m_ModuleList.SetFocus();
 
+	return 0;
+}
+
+void CView::CopySelected() const {
+	auto focus = ::GetFocus();
+	CString text;
+
+	if (focus == m_Tree.m_hWnd) {
+		if (auto hItem = m_Tree.GetSelectedItem())
+			m_Tree.GetItemText(hItem, text);
+	}
+	else if (focus == m_ModuleList.m_hWnd)
+		text = ListViewHelper::GetSelectedRowsAsString(m_ModuleList);
+	else if (focus == m_ImportsList.m_hWnd)
+		text = ListViewHelper::GetSelectedRowsAsString(m_ImportsList);
+	else if (focus == m_ExportsList.m_hWnd)
+		text = ListViewHelper::GetSelectedRowsAsString(m_ExportsList);
+
+	if (!text.IsEmpty())
+		ClipboardHelper::CopyText(m_hWnd, text);
+}
+
+LRESULT CView::OnEditCopy(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWndCtl*/, BOOL& /*bHandled*/) {
+	CopySelected();
 	return 0;
 }
 
