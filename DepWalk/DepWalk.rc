@@ -226,7 +226,7 @@ BEGIN
             VALUE "FileDescription", "DepWalk - Dependency Walker Redux"
             VALUE "FileVersion", "0.3.0.0"
             VALUE "InternalName", "DepWalk"
-            VALUE "LegalCopyright", "ï¿½2023-2026 Pavel Yosifovich"
+            VALUE "LegalCopyright", "©2023-2026 Pavel Yosifovich"
             VALUE "OriginalFilename", "DepWalk.exe"
             VALUE "ProductName", "Dependencly Walker X"
             VALUE "ProductVersion", "0.3.0.0"

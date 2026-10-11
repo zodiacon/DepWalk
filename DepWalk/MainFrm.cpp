@@ -267,25 +267,11 @@ LRESULT CMainFrame::OnOptionsFont(WORD /*wNotifyCode*/, WORD /*wID*/, HWND /*hWn
 		::SystemParametersInfo(SPI_GETICONTITLELOGFONT, sizeof(lf), &lf, 0);
 
 	CFontDialog dlg(&lf, CF_SCREENFONTS | CF_EFFECTS, nullptr, m_hWnd);
-
-	// The classic ChooseFont dialog draws its Font/Font style list boxes itself
-	// (owner-drawn, to show the TrueType icon) with hardcoded light colors, so
-	// they never pick up our subclassing. Suspending our own hook isn't enough,
-	// since Windows' own common-dialog rendering still follows the process-wide
-	// dark-mode preference. Flip that preference off for the dialog's lifetime.
-	auto mode = WTLHelper::DarkModeType();
-	WTLHelper::SwitchToMode(DarkModeKind::Light, nullptr);
-	WTLHelper::SuspendHook();
-	auto ok = dlg.DoModal() == IDOK;
-	WTLHelper::ResumeHook();
-	WTLHelper::SwitchToMode(mode, m_hWnd);
-	if (!ok)
-		return 0;
-
-	LOGFONT newFont;
-	dlg.GetCurrentFont(&newFont);
-	ApplyFont(newFont);
-
+	if (WTLHelper::InvokeFontDialog(dlg)) {
+		LOGFONT newFont;
+		dlg.GetCurrentFont(&newFont);
+		ApplyFont(newFont);
+	}
 	return 0;
 }
 
