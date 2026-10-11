@@ -5,12 +5,22 @@
 #include "pch.h"
 #include "resource.h"
 #include "View.h"
+#include "ApiSets.h"
 #include <SortHelper.h>
 #include <ListViewhelper.h>
 #include <ClipboardHelper.h>
 #include <DbgHelp.h>
 
 #pragma comment(lib, "dbghelp")
+
+static std::wstring ApiSetHostText(PCWSTR apiSet, PCWSTR importer = nullptr) {
+	if (!IsApiSetSchemaSupported())
+		return L"(unsupported)";
+	auto host = ResolveApiSetHost(apiSet, importer);
+	if (!host)
+		return L"(not found)";
+	return host->empty() ? L"(none)" : *host;
+}
 
 BOOL CView::PreTranslateMessage(MSG* pMsg) {
 	pMsg;
@@ -99,6 +109,7 @@ CString CView::GetColumnText(HWND h, int row, int col) const {
 		switch (tag) {
 			case ColumnType::Name: return mi->Name.c_str();
 			case ColumnType::Path: return mi->FullPath.c_str();
+			case ColumnType::ApiSetHost: return mi->ApiSetHost.c_str();
 			case ColumnType::FileSize:
 				if (!mi->IsApiSet && mi->PE->IsLoaded()) {
 					WCHAR text[64];
@@ -136,6 +147,7 @@ CString CView::GetColumnText(HWND h, int row, int col) const {
 			case ColumnType::Hint: return std::to_wstring(func.ImpByName.Hint).c_str();
 			case ColumnType::Ordinal: return func.ImpByName.Name[0] == 0 ? std::to_wstring(func.unThunk.Thunk32.u1.Ordinal).c_str() : L"0";
 			case ColumnType::UndecoratedName: return func.FuncName.empty() ? L"" : (PCWSTR)UndecorateName(func.FuncName.c_str());
+			case ColumnType::ApiSetHost: return mod->ApiSetHost.c_str();
 		}
 	}
 
@@ -208,9 +220,13 @@ bool CView::OnRightClickList(HWND list, int row, int col, POINT const& pt) const
 }
 
 void CView::SetAppFont(LOGFONT const& lf) {
+	auto font = lf;
+	// no font set (first run or "Reset Font"): use the system UI font tree and list views default to
+	if (font.lfFaceName[0] == 0)
+		::SystemParametersInfo(SPI_GETICONTITLELOGFONT, sizeof(font), &font, 0);
 	if(s_Font)
 		s_Font.DeleteObject();
-	s_Font.CreateFontIndirect(&lf);
+	s_Font.CreateFontIndirect(&font);
 }
 
 void CView::ApplyFont() {
@@ -277,6 +293,7 @@ void CView::DoSort(SortInfo const* si) {
 			switch (tag) {
 				case ColumnType::Name: return SortHelper::Sort(m1->Name, m2->Name, asc);
 				case ColumnType::Path: return SortHelper::Sort(m1->FullPath, m2->FullPath, asc);
+				case ColumnType::ApiSetHost: return SortHelper::Sort(m1->ApiSetHost, m2->ApiSetHost, asc);
 				case ColumnType::FileTime: return SortHelper::Sort(m1->FileTime, m2->FileTime, asc);
 				case ColumnType::FileSize: return SortHelper::Sort(m1->PE.GetFileSize(), m2->PE.GetFileSize(), asc);
 				case ColumnType::ImageBase: return SortHelper::Sort(m1->GetImageBase(), m2->GetImageBase(), asc);
@@ -401,6 +418,8 @@ std::pair<HTREEITEM, ModuleInfo*> CView::ParsePE(PCWSTR name, HTREEITEM hParent,
 					auto nodeImports = std::make_unique<ModuleTreeInfo>();
 					nodeImports->Imports = lib.ImportFunc;
 					nodeImports->Module = m2;
+					if (m2->IsApiSet)
+						nodeImports->ApiSetHost = ApiSetHostText(libname.c_str(), m->Name.c_str());
 					m_TreeItems.insert({ hSubItem, std::move(nodeImports) });
 				}
 			}
@@ -408,7 +427,10 @@ std::pair<HTREEITEM, ModuleInfo*> CView::ParsePE(PCWSTR name, HTREEITEM hParent,
 	}
 	else {
 		if (apiSet) {
-			// TODO
+			m->ApiSetHost = ApiSetHostText(name);
+			// not in the schema, so the loader can't resolve it
+			if (IsApiSetSchemaSupported() && !ResolveApiSetHost(name))
+				icon = 2;
 		}
 		if (!apiSet && m->FullPath.empty())
 			icon = 2;
@@ -486,6 +508,7 @@ LRESULT CView::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOO
 	auto cm = GetColumnManager(m_ModuleList);
 	cm->AddColumn(L"Module Name", LVCFMT_LEFT, 280, ColumnType::Name);
 	cm->AddColumn(L"Full Path", LVCFMT_LEFT, 350, ColumnType::Path);
+	cm->AddColumn(L"Implementation DLL", LVCFMT_LEFT, 150, ColumnType::ApiSetHost);
 	cm->AddColumn(L"File Size", LVCFMT_RIGHT, 100, ColumnType::FileSize);
 	cm->AddColumn(L"File Time", LVCFMT_LEFT, 150, ColumnType::FileTime);
 	cm->AddColumn(L"Link Time Stamp", LVCFMT_LEFT, 100, ColumnType::LinkTime);
@@ -498,6 +521,7 @@ LRESULT CView::OnCreate(UINT /*uMsg*/, WPARAM /*wParam*/, LPARAM /*lParam*/, BOO
 	cm->AddColumn(L"Ordinal", LVCFMT_RIGHT, 70, ColumnType::Ordinal);
 	cm->AddColumn(L"Hint", LVCFMT_RIGHT, 70, ColumnType::Hint);
 	cm->AddColumn(L"Undecorated Name", LVCFMT_LEFT, 250, ColumnType::UndecoratedName);
+	cm->AddColumn(L"Implementation DLL", LVCFMT_LEFT, 150, ColumnType::ApiSetHost);
 
 	cm = GetColumnManager(m_ExportsList);
 	cm->AddColumn(L"Name", LVCFMT_LEFT, 250, ColumnType::Name);

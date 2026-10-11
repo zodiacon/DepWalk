@@ -14,6 +14,7 @@ struct ModuleInfo {
 	std::vector<libpe::PEExportFunction> Exports;
 	int Icon;
 	bool IsApiSet;
+	std::wstring ApiSetHost;
 	mutable ULONG64 FileTime{ 0 };
 	CString const& GetFileTime() const;
 	ULONG64 GetImageBase() const;
@@ -30,6 +31,7 @@ private:
 struct ModuleTreeInfo {
 	std::vector<libpe::PEImportFunction> Imports;
 	ModuleInfo* Module{ nullptr };
+	std::wstring ApiSetHost;	// host resolved for this node's importer, if Module is an API set
 };
 
 class CView : 
@@ -75,7 +77,7 @@ protected:
 
 private:
 	enum class ColumnType {
-		Name, Path, FileTime, LinkTime, FileSize, LinkChecksum, Arch, Subsystem, ImageBase, OSVersion,
+		Name, Path, FileTime, LinkTime, FileSize, LinkChecksum, Arch, Subsystem, ImageBase, OSVersion, ApiSetHost,
 		Hint, Ordinal, UndecoratedName, ForwardedName, RVA, NameRVA,
 	};
 
